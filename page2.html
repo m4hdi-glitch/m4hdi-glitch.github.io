@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greenhouse Sensor Dashboard</title>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1; /* Light gray background */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centering all content */
+            position: relative; /* Needed for positioning the button */
+            min-height: 100vh; /* Ensure the body takes full height */
+        }
+
+        /* Heading style */
+        h1 {
+            text-align: center;
+            margin-top: 30px;
+            color: green; /* Changed to green */
+        }
+
+        .invisible-header {
+    visibility: hidden;
+}
+
+.color_btn{
+    color: #777; /* Keep the last updated text gray */
+}
+
+
+        /* Container for all the data sections */
+        .dashboard-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+            gap: 20px; /* Space between the sections */
+            flex-wrap: wrap; /* Allow sections to wrap in smaller screens */
+            width: 90%; /* Make it responsive */
+            max-width: 1200px;
+        }
+
+        /* Each sensor section box */
+        .data-section {
+            background-color: #fff; /* White background for the data boxes */
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            width: 200px; /* Increased width */
+            height: 90px; /* Reduced height further */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Section heading */
+        .data-section h2 {
+            font-size: 1rem;
+            color: green; /* Changed to green */
+            margin-bottom: 5px;
+        }
+
+        /* Display sensor value */
+        .sensor-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: green; /* Changed to green */
+        }
+
+        /* Last updated style */
+        .last-updated {
+            font-size: 0.6rem;
+            color: #777; /* Keep the last updated text gray */
+            margin-top: 5px;
+        }
+
+        /* Button style */
+        .toggle-button {
+            margin-top: 20px; /* Increased margin for more spacing */
+            padding: 10px 15px;
+            background-color: white; /* White background */
+            color: green; /* Green text */
+            border: 2px solid green; /* Green border */
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            z-index: 1000; /* Ensure button is above other content */
+            width: 200px; /* Match button width to the sensor sections */
+        }
+
+        .toggle-button:hover {
+            background-color: green;
+            color: white; /* Text changes to white on hover */
+        }
+
+        .toggle-button:focus {
+            outline: none; /* Remove default focus outline */
+            box-shadow: 0 0 8px rgba(72, 176, 92, 0.6); /* Green outline when focused */
+        }
+
+        /* When fan is on, background turns soft green */
+        .fan-on {
+            background-color: #a8d5ba; /* Soft green color */
+            color: white;
+        }
+
+        /* Responsive design for small screens */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column; /* Stack sections vertically */
+                align-items: center;
+            }
+
+            .data-section {
+                width: 500%;
+                margin-bottom: 5px;
+            }
+
+            .toggle-button {
+                width: 90%; /* Make button take full width on smaller screens */
+                font-size: 1.1rem;
+                margin-top: 10px;
+            }
+        }
+
+        /* Added style for positioning the button under the Temperature section */
+        .temperature-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Added style for positioning the button under the Humidity section */
+        .humidity-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .water-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .light-button {
+            margin-top: 20px; /* Increased margin for more spacing */
+            padding: 40px 20px;
+            background-color: white; /* White background */
+            color: green; /* Green text */
+            border: 2px solid green; /* Green border */
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            z-index: 1000; /* Ensure button is above other content */
+            width: 200px; /* Match button width to the sensor sections */
+          }
+          .light-button:hover {
+            background-color: green;
+            color: white;
+        }
+
+        /* When the light is on, background becomes light green */
+        .light-on {
+            background-color: #a8d5ba;
+            color: white;
+        }
+
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px; /* Move buttons further down */
+            text-align: left; /* Align buttons to the left */
+            margin-left: -18px;
+        }
+
+        
+
+        /* Input and button styles */
+        .input-container input {
+            padding: 10px;
+            font-size: 1rem;
+            margin-bottom: 5px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+
+        }
+
+        .input-container button {
+            padding: 10px 30px;
+            font-size: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .input-container button:hover {
+            background-color: #45a049;
+        }
+
+
+        /* Basic Button Style */
+/* Basic Button Style */
+.firebase-button {
+    height: 40px; /* Set the height */
+    width: 80px; /* Set the width */
+    font-size: 0.9rem;
+    background-color: white;
+    color: #4CAF50; /* Green text */
+    border: 2px solid #4CAF50;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    text-align: center;
+    line-height: 40px; /* Vertically center the text */
+}
+
+/* Hover Effect: Change background color and text color */
+.firebase-button:hover {
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    transform: scale(1.05); /* Slightly enlarge the button for hover effect */
+}
+
+/* Focus Effect: Add green outline and soft shadow when button is focused */
+.firebase-button:focus {
+    outline: none; /* Remove default focus outline */
+    box-shadow: 0 0 8px rgba(72, 176, 92, 0.6); /* Green outline when focused */
+}
+
+/* Active State: Change button appearance when it is active/selected */
+.firebase-button.active {
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    box-shadow: 0 0 12px rgba(72, 176, 92, 0.6); /* Green glow effect */
+}
+
+/* Soft Green Background for "Fan On" State */
+.firebase-button.fan-on {
+    background-color: #a8d5ba; /* Soft green color */
+    color: white;
+}
+
+
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .firebase-button {
+        font-size: 0.8rem; /* Smaller font size for smaller screens */
+        padding: 4px 15px; /* Adjust padding */
+    }
+}
+
+    </style>
+</head>
+<body>
+    <!-- Main Heading -->
+    <h1>Greenhouse Dashboard</h1>
+    
+
+    <!-- Dashboard Container for All Data Sections -->
+    <div class="dashboard-container">
+        <div class="temperature-container">
+            <!-- Section 1: Temperature -->
+            <div class="data-section" id="temperature-section">
+                <h2>Temperature</h2>
+                <div class="sensor-value" id="temperature-value">Loading...</div>
+                <div class="last-updated" id="temperature-last-updated">Last updated: Loading...</div>
+            </div>
+
+            <!-- Button to toggle Cooling System underneath Temperature -->
+            <button class="toggle-button" id="fan-toggle-button">Cooling System</button>
+
+            <!-- Button to toggle Auto Cooling underneath Cooling System -->
+            <button class="toggle-button" id="auto-cooling-button">Auto Cooling</button>
+        </div>
+
+        <div class="humidity-container">
+            <!-- Section 2: Humidity -->
+            <div class="data-section" id="humidity-section">
+                <h2>Humidity</h2>
+                <div class="sensor-value" id="humidity-value">Loading...</div>
+                <div class="last-updated" id="humidity-last-updated">Last updated: Loading...</div>
+            </div>
+
+            <!-- Button to control Watering System under Humidity -->
+            <button class="toggle-button" id="watering-system-button">Watering System</button>
+
+            <!-- Button to toggle Auto Watering under Watering System -->
+            <button class="toggle-button" id="auto-watering-button">Auto Watering</button>
+        </div>
+
+        <!-- Section 3: Soil Moisture -->
+        
+        <div class="data-section" id="soil-moisture-section">
+            <h1></h1>
+            <h1></h1>
+            <h1></h1>
+
+            <h2>Soil Moisture</h2>
+            <div class="sensor-value" id="soil-moisture-value">Loading...</div>
+            <div class="last-updated" id="soil-moisture-last-updated">Last updated: Loading...</div>
+            <h2></h2>
+
+            <button class="light-button" id="light-toggle-button">Light</button>
+
+
+        </div>
+
+
+
+        <!-- Section 4: Water Level -->
+        <div class="water-container">
+            <!-- Section 2: Humidity -->
+            <div class="data-section" id="water-level-section">
+                <h2>Water Level</h2>
+                <div class="sensor-value" id="water-level-value">Loading...</div>
+                <div class="last-updated" id="water-level-last-updated">Last updated: Loading...</div>
+            </div>
+
+            <!-- Button to control Watering System under Humidity -->
+            <button class="toggle-button" id="tracker-button">Solar Tracker</button>
+
+            <!-- Button to toggle Auto Watering under Watering System -->
+            <button class="toggle-button" id="gate-button">Gate</button>
+        </div>
+        
+ <!-- Input for moisture threshold -->
+ 
+
+<div class="input-container">
+
+    <input type="number" id="temperature-input" placeholder="Set Temperature Threshold">    
+    <button id="fansubmitButton">Set Threshold</button>      
+
+</div>
+
+<div class="input-container">
+
+      <input type="number" id="moisture-input" placeholder="Set Moisture Threshold">    
+
+        <button id="submit-threshold">Set Threshold</button>        <h1 class="invisible-header">............................</h1>
+
+
+</div>
+
+<div class="button-container">
+    <h4>    
+        <h4 class="color_btn">Set Push Button</h4>
+    </h4>
+
+
+    <button class="firebase-button" data-value="c">Colling</button>      
+    <button class="firebase-button" data-value="d">Light</button>       
+    <button class="firebase-button" data-value="e">Watering</button>
+    <button class="firebase-button" data-value="f">Solar</button>
+    <button class="firebase-button" data-value="g">Gate</button>
+
+
+</div>
+
+
+
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXiWaXHDWxyqSEj6uwMTT-VanzdLZUhTY",
+            authDomain: "green-house-9bcfb.firebaseapp.com",
+            databaseURL: "https://green-house-9bcfb-default-rtdb.firebaseio.com",
+            projectId: "green-house-9bcfb",
+            storageBucket: "green-house-9bcfb.firebasestorage.app",
+            messagingSenderId: "453615450898",
+            appId: "1:453615450898:web:adf6252d6f690a04c311cb",
+            measurementId: "G-B6G7SMT81G"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Format timestamp to readable date
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString(); // e.g., "12/26/2024, 2:15:30 PM"
+        }
+
+        // Reference to the 'temperature' path
+        const temperatureRef = firebase.database().ref('temperature');
+        temperatureRef.on('value', (snapshot) => {
+            const temperature = snapshot.val();
+            const timestamp = snapshot.val().timestamp || Date.now(); // Get timestamp from the data or use current time
+            document.getElementById('temperature-value').innerText = `${temperature} °C`;
+            document.getElementById('temperature-last-updated').innerText = `Last updated: ${formatTimestamp(timestamp)}`;
+        });
+
+        // Reference to the 'humidity' path
+        const humidityRef = firebase.database().ref('humidity');
+        humidityRef.on('value', (snapshot) => {
+            const humidity = snapshot.val();
+            const timestamp = snapshot.val().timestamp || Date.now(); // Get timestamp from the data or use current time
+            document.getElementById('humidity-value').innerText = `${humidity} %`;
+            document.getElementById('humidity-last-updated').innerText = `Last updated: ${formatTimestamp(timestamp)}`;
+        });
+
+        // Reference to the 'SoilMoisturePercent' path
+        const soilMoistureRef = firebase.database().ref('SoilMoisturePercent');
+        soilMoistureRef.on('value', (snapshot) => {
+            const soilMoisture = snapshot.val();
+            const timestamp = snapshot.val().timestamp || Date.now(); // Get timestamp from the data or use current time
+            document.getElementById('soil-moisture-value').innerText = `${soilMoisture} %`;
+            document.getElementById('soil-moisture-last-updated').innerText = `Last updated: ${formatTimestamp(timestamp)}`;
+        });
+
+        // Reference to the 'waterLevelStatus' path
+        const waterLevelRef = firebase.database().ref('waterLevelStatus');
+        waterLevelRef.on('value', (snapshot) => {
+            const waterLevel = snapshot.val();
+            const timestamp = snapshot.val().timestamp || Date.now(); // Get timestamp from the data or use current time
+            document.getElementById('water-level-value').innerText = waterLevel;
+            document.getElementById('water-level-last-updated').innerText = `Last updated: ${formatTimestamp(timestamp)}`;
+        });
+
+        // Fan toggle button functionality
+        const fanToggleButton = document.getElementById('fan-toggle-button');
+        fanToggleButton.addEventListener('click', () => {
+            const fanStatusRef = firebase.database().ref('fan');
+            fanStatusRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "fon") {
+                    fanStatusRef.set("foff");
+                    fanToggleButton.classList.remove('fan-on');
+                    console.log("Cooling System turned off");
+                } else {
+                    fanStatusRef.set("fon");
+                    fanToggleButton.classList.add('fan-on');
+                    console.log("Cooling System turned on");
+                }
+            });
+        });
+
+        // Auto Cooling toggle button functionality
+        const autoCoolingButton = document.getElementById('auto-cooling-button');
+        autoCoolingButton.addEventListener('click', () => {
+            const autoCoolingRef = firebase.database().ref('autoFanMode');
+            autoCoolingRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "on") {
+                    autoCoolingRef.set("off");
+                    autoCoolingButton.classList.remove('fan-on');
+                    console.log("Auto Cooling turned off");
+                } else {
+                    autoCoolingRef.set("on");
+                    autoCoolingButton.classList.add('fan-on');
+                    console.log("Auto Cooling turned on");
+                }
+            });
+        });
+
+        // Watering System button functionality
+        const wateringSystemButton = document.getElementById('watering-system-button');
+        wateringSystemButton.addEventListener('click', () => {
+            const wateringStatusRef = firebase.database().ref('pump');
+            wateringStatusRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "pon") {
+                    wateringStatusRef.set("poff");
+                    wateringSystemButton.classList.remove('fan-on');
+                    console.log("Watering System turned off");
+                } else {
+                    wateringStatusRef.set("pon");
+                    wateringSystemButton.classList.add('fan-on');
+                    console.log("Watering System turned on");
+                }
+            });
+        });
+
+        // Auto Watering button functionality
+        const autoWateringButton = document.getElementById('auto-watering-button');
+        autoWateringButton.addEventListener('click', () => {
+            const autoWateringRef = firebase.database().ref('autoPumpMode');
+            autoWateringRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "on") {
+                    autoWateringRef.set("off");
+                    autoWateringButton.classList.remove('fan-on');
+                    console.log("Auto Watering turned off");
+                } else {
+                    autoWateringRef.set("on");
+                    autoWateringButton.classList.add('fan-on');
+                    console.log("Auto Watering turned on");
+                }
+            });
+        });
+
+
+        const lightButton = document.getElementById('light-toggle-button');
+        lightButton.addEventListener('click', () => {
+            const lightButtonRef = firebase.database().ref('light');
+            lightButtonRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "lon") {
+                    lightButtonRef.set("loff");
+                    lightButton.classList.remove('light-on');
+                    console.log("light turned off");
+                } else {
+                    lightButtonRef.set("lon");
+                    lightButton.classList.add('light-on');
+                    console.log("light turned on");
+                }
+            });
+        });
+
+        const solarButton = document.getElementById('tracker-button');
+        solarButton.addEventListener('click', () => {
+            const solarButtonRef = firebase.database().ref('tracker_command');
+            solarButtonRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "solaron") {
+                    solarButtonRef.set("solaroff");
+                    solarButton.classList.remove('light-on');
+                    console.log("tracker turned off");
+                } else {
+                    solarButtonRef.set("solaron");
+                    solarButton.classList.add('light-on');
+                    console.log("tracker turned on");
+                }
+            });
+        });
+
+        const gateButton = document.getElementById('gate-button');
+        gateButton.addEventListener('click', () => {
+            const gateButtonRef = firebase.database().ref('gate');
+            gateButtonRef.once('value', (snapshot) => {
+                const currentStatus = snapshot.val();
+                if (currentStatus === "gate_on") {
+                    gateButtonRef.set("gate_off");
+                    gateButton.classList.remove('light-on');
+                    console.log("gate turned off");
+                } else {
+                    gateButtonRef.set("gate_on");
+                    gateButton.classList.add('light-on');
+                    console.log("gate turned on");
+                }
+            });
+        });
+
+
+        
+        const submitfanButton = document.getElementById('fansubmitButton');
+        const tempInput = document.getElementById('temperature-input');
+
+        // Event listener for the submit button
+        submitfanButton.addEventListener('click', () => {
+            const tempthresholdValue = tempInput.value; // Get the value from the input box
+
+            
+
+            if (tempthresholdValue && !isNaN(tempthresholdValue)) {
+                // Set the value to Firebase under the "moistureThreshold" path
+                firebase.database().ref('tempOnThreshold').set(tempthresholdValue)
+                    .then(() => {
+                        tempInput.placeholder = `Set temperature to ${tempthresholdValue}`; // Set placeholder text to the entered value
+                        tempInput.value = ''; // Clear the input field
+                    })
+                    .catch((error) => {
+                        console.error("Error setting temp value: ", error);
+                        alert("Failed to set temp threshold.");
+                    });
+            } else {
+                alert("Please enter a valid number for the moisture threshold.");
+            }
+        });
+
+
+        const submitButton = document.getElementById('submit-threshold');
+        const moistureInput = document.getElementById('moisture-input');
+
+        // Event listener for the submit button
+        submitButton.addEventListener('click', () => {
+            const thresholdValue = moistureInput.value ; // Get the value from the input box
+
+            
+
+            if (thresholdValue && !isNaN(thresholdValue)) {
+                // Set the value to Firebase under the "moistureThreshold" path
+                firebase.database().ref('moistureThreshold').set(thresholdValue)
+                    .then(() => {
+                        moistureInput.placeholder = `Set moisture to ${thresholdValue} `; // Set placeholder text to the entered value
+                        moistureInput.value = ''; // Clear the input field
+                    })
+                    .catch((error) => {
+                        console.error("Error setting threshold value: ", error);
+                        alert("Failed to set moisture threshold.");
+                    });
+            } else {
+                alert("Please enter a valid number for the moisture threshold.");
+            }
+        });
+
+        // Reference to the Firebase path
+        document.querySelectorAll('.firebase-button').forEach(button => {
+    button.addEventListener('click', function() {
+        // Remove 'active' class from all buttons
+        document.querySelectorAll('.firebase-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Add 'active' class to the clicked button (to keep it green)
+        this.classList.add('active');
+
+        // Set values in Firebase depending on which button was clicked
+        const value = this.textContent; // Get the button's text (C, D, E, F, G)
+        
+        // Assuming you are setting values in Firebase
+        firebase.database().ref('').set(value); // Replace 'your-path' with actual path
+    });
+});
+
+const rfisStatusRef = firebase.database().ref('rfid_status');
+
+        // Listen for changes to 'rfis_status'
+        rfisStatusRef.on('value', (snapshot) => {
+            const status = snapshot.val();
+
+            if (status === "lll") {
+                // Redirect to the control.html page
+                window.location.href = "index.html";
+            }
+        });
+
+
+
+
+        
+        
+    </script>
+</body>
+</html>
